@@ -1,73 +1,269 @@
-# Welcome to your Lovable project
+# Scrible_it - Collaborative Whiteboard
 
-## Project info
+A production-ready collaborative whiteboard application built with React, tldraw, and WebSocket for real-time collaboration.
 
-**URL**: https://lovable.dev/projects/a4c4fdac-6801-46ef-b0c4-c6c45b4678df
+## 🚀 Features
 
-## How can I edit this code?
+- **Real-time Collaboration**: Multiple users can draw together with live presence cursors
+- **Powerful Drawing Tools**: Built on tldraw with full drawing capabilities
+- **Room System**: Create and join rooms with unique IDs
+- **Presence Awareness**: See who's in the room and their cursor positions
+- **Share Functionality**: Easy room link sharing
+- **Responsive Design**: Works on mobile, tablet, and desktop
 
-There are several ways of editing your application.
+## 🏗️ Architecture
 
-**Use Lovable**
+### Frontend (This Repo)
+- **Framework**: React + TypeScript + Vite
+- **Drawing Engine**: tldraw
+- **State Management**: Zustand
+- **Styling**: Tailwind CSS + shadcn/ui
+- **Real-time**: WebSocket client with reconnection logic
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/a4c4fdac-6801-46ef-b0c4-c6c45b4678df) and start prompting.
+### Backend (Required - Deploy Separately)
 
-Changes made via Lovable will be committed automatically to this repo.
+You need to deploy a custom WebSocket server that implements the protocol defined in `src/types/protocol.ts`.
 
-**Use your preferred IDE**
+#### Recommended Tech Stack:
+- **Runtime**: Node.js + TypeScript
+- **Framework**: NestJS or Fastify
+- **WebSocket**: ws or uWebSockets.js
+- **CRDT**: Yjs for conflict-free collaborative editing
+- **Database**: PostgreSQL (for room metadata, users)
+- **Cache/Presence**: Redis (for real-time presence data)
+- **Storage**: AWS S3 (for exports and snapshots)
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+#### Backend Implementation Guide:
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+1. **WebSocket Server**
+   - Implement message handlers for all message types in `protocol.ts`
+   - Handle connection lifecycle (connect, disconnect, reconnect)
+   - Implement heartbeat for connection monitoring
 
-Follow these steps:
+2. **Yjs Integration**
+   - Use y-websocket or custom Yjs provider
+   - Persist Yjs documents to PostgreSQL as snapshots
+   - Implement incremental sync for new clients
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+3. **Room Management**
+   ```sql
+   -- Schema example
+   CREATE TABLE rooms (
+     id VARCHAR PRIMARY KEY,
+     name VARCHAR,
+     owner_id VARCHAR,
+     visibility VARCHAR,
+     password_hash VARCHAR,
+     created_at TIMESTAMP,
+     last_active TIMESTAMP
+   );
+   
+   CREATE TABLE room_participants (
+     room_id VARCHAR,
+     user_id VARCHAR,
+     client_id VARCHAR,
+     role VARCHAR,
+     joined_at TIMESTAMP
+   );
+   
+   CREATE TABLE room_snapshots (
+     id UUID PRIMARY KEY,
+     room_id VARCHAR,
+     snapshot_data BYTEA,
+     version INTEGER,
+     created_at TIMESTAMP
+   );
+   ```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+4. **REST API Endpoints**
+   - `POST /api/rooms` - Create room
+   - `GET /api/rooms/:roomId` - Get room info
+   - `POST /api/rooms/:roomId/invite` - Generate invite link
+   - `POST /api/exports/:roomId` - Export drawing
 
-# Step 3: Install the necessary dependencies.
-npm i
+5. **Authentication (Optional)**
+   - JWT-based auth
+   - Magic link / OAuth (Google, GitHub)
+   - Anonymous users supported
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+6. **Deployment**
+   - Docker + Kubernetes or Fly.io
+   - Load balancer with sticky sessions
+   - Redis for cross-instance pub/sub
+   - Environment variables for config
+
+#### WebSocket Message Protocol
+
+All messages are JSON and must conform to the types in `src/types/protocol.ts`:
+
+```typescript
+// Client -> Server
+{
+  type: 'connect',
+  token?: string,
+  roomId: string,
+  user: { id, name, color }
+}
+
+{
+  type: 'presence',
+  clientId: string,
+  cursor: { x, y },
+  selection?: string[]
+}
+
+{
+  type: 'update',
+  clientId: string,
+  delta: string, // base64 encoded Yjs update
+  version: number
+}
+
+// Server -> Client
+{
+  type: 'join',
+  user: User,
+  clientId: string,
+  roomId: string
+}
+
+{
+  type: 'sync-response',
+  snapshotData: string,
+  version: number
+}
+```
+
+## 🛠️ Development Setup
+
+### Frontend Setup
+
+1. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+2. **Configure WebSocket URL**
+   Create `.env.local`:
+   ```
+   VITE_WS_URL=ws://localhost:3001
+   ```
+
+3. **Run development server**
+   ```bash
+   npm run dev
+   ```
+
+### Backend Setup (Reference Implementation)
+
+```bash
+# Clone backend template (create this separately)
+git clone <your-backend-repo>
+cd scrible-backend
+
+# Install dependencies
+npm install
+
+# Configure environment
+cp .env.example .env
+# Edit .env with your database, Redis, etc.
+
+# Run migrations
+npm run migrate
+
+# Start server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## 📦 Deployment
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Frontend (Vercel)
+```bash
+# Connect to Vercel
+vercel
 
-**Use GitHub Codespaces**
+# Set environment variables in Vercel dashboard
+VITE_WS_URL=wss://your-websocket-server.com
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+# Deploy
+vercel --prod
+```
 
-## What technologies are used for this project?
+### Backend (Fly.io Example)
+```bash
+# Install flyctl
+curl -L https://fly.io/install.sh | sh
 
-This project is built with:
+# Launch app
+fly launch
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+# Set secrets
+fly secrets set DATABASE_URL=... REDIS_URL=...
 
-## How can I deploy this project?
+# Deploy
+fly deploy
+```
 
-Simply open [Lovable](https://lovable.dev/projects/a4c4fdac-6801-46ef-b0c4-c6c45b4678df) and click on Share -> Publish.
+## 🔒 Security Considerations
 
-## Can I connect a custom domain to my Lovable project?
+1. **WebSocket Authentication**: Implement JWT validation on connection
+2. **Rate Limiting**: Limit messages per client to prevent DOS
+3. **Input Validation**: Validate all messages on server
+4. **Room Access Control**: Implement proper ACL (owner/editor/viewer)
+5. **CORS**: Configure allowed origins
+6. **XSS Prevention**: Sanitize any user-generated content
 
-Yes, you can!
+## 🧪 Testing
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+```bash
+# Unit tests
+npm test
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+# E2E tests (Playwright)
+npm run test:e2e
+
+# Load testing (WebSocket)
+# Use a tool like artillery or k6
+```
+
+## 📊 Monitoring
+
+Recommended monitoring setup:
+- **Errors**: Sentry
+- **Metrics**: Prometheus + Grafana or Datadog
+- **Logs**: Winston/Pino with structured logging
+- **WebSocket**: Track active connections, messages/sec, latency
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests
+5. Submit a pull request
+
+## 📄 License
+
+MIT License - see LICENSE file for details
+
+## 🙋 Support
+
+For issues or questions:
+- Create an issue in this repository
+- Check the [tldraw documentation](https://tldraw.dev)
+- Review the [Yjs documentation](https://docs.yjs.dev)
+
+## 🎯 Roadmap
+
+- [ ] Backend reference implementation
+- [ ] User authentication
+- [ ] Persistent room history
+- [ ] Export functionality (PNG, SVG, PDF)
+- [ ] Chat panel
+- [ ] Video/voice integration
+- [ ] Template library
+- [ ] Session recording & playback
+
+---
+
+**Note**: This frontend requires a custom WebSocket backend to function fully. See the Backend Implementation Guide above for details.

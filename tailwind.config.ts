@@ -22,6 +22,14 @@ export default {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          hover: "hsl(var(--primary-hover))",
+        },
+        presence: {
+          1: "hsl(var(--presence-1))",
+          2: "hsl(var(--presence-2))",
+          3: "hsl(var(--presence-3))",
+          4: "hsl(var(--presence-4))",
+          5: "hsl(var(--presence-5))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -62,6 +70,14 @@ export default {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+      },
+      boxShadow: {
+        card: "var(--card-shadow)",
+        "card-hover": "var(--card-shadow-hover)",
+      },
+      fontFamily: {
+        sans: ["Inter var", "Inter", "system-ui", "sans-serif"],
+        display: ["Cal Sans", "Inter var", "sans-serif"],
       },
       keyframes: {
         "accordion-down": {
