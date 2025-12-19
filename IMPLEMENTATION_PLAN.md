@@ -233,14 +233,16 @@ editor.on('pointerMove', (event) => {
 - [x] Zustand store for room state
 - [x] Participants drawer UI
 - [x] Room header with share button
+- [x] **User generation with localStorage persistence** (`src/hooks/useUser.ts`)
+- [x] **Yjs document binding to tldraw** (`src/hooks/useYjsSync.ts`)
+- [x] **Real-time cursor rendering for other users** (`src/hooks/useCollaborativeCursors.ts`)
 
 ### 🔲 TODO (Frontend)
-- [ ] User generation with localStorage persistence
-- [ ] Yjs document binding to tldraw
-- [ ] Real-time cursor rendering for other users
 - [ ] Reconnection handling UI
 - [ ] Export functionality (PNG/SVG)
 - [ ] Offline indicator
+- [ ] User profile editor (change name/color)
+- [ ] Chat panel
 
 ---
 
@@ -249,19 +251,22 @@ editor.on('pointerMove', (event) => {
 ```
 Frontend (Lovable)
 ├── src/
+│   ├── hooks/
+│   │   ├── useUser.ts               # ✅ Anonymous user management (localStorage)
+│   │   ├── useYjsSync.ts            # ✅ Yjs document binding to tldraw
+│   │   └── useCollaborativeCursors.ts # ✅ Remote cursor rendering
 │   ├── lib/
-│   │   ├── user.ts          # Anonymous user management
-│   │   ├── websocket.ts     # WebSocket client ✅
-│   │   └── yjs-provider.ts  # Yjs WebSocket provider
+│   │   ├── websocket.ts             # ✅ WebSocket client
+│   │   └── utils.ts                 # ✅ Utilities
 │   ├── store/
-│   │   └── useRoomStore.ts  # Room state ✅
+│   │   └── useRoomStore.ts          # ✅ Room state
 │   ├── components/
-│   │   ├── Canvas.tsx       # tldraw wrapper with Yjs
-│   │   ├── Cursors.tsx      # Render other users' cursors
-│   │   └── ...
+│   │   ├── RoomHeader.tsx           # ✅ Room header
+│   │   ├── ParticipantsDrawer.tsx   # ✅ Participants list
+│   │   └── ui/                      # ✅ Shadcn components
 │   └── pages/
-│       ├── Landing.tsx      # ✅
-│       └── Room.tsx         # ✅
+│       ├── Landing.tsx              # ✅ Landing page
+│       └── Room.tsx                 # ✅ Collaboration room
 
 Backend (Custom - Deploy Separately)
 ├── src/
@@ -282,9 +287,9 @@ Backend (Custom - Deploy Separately)
 
 ## Next Steps
 
-1. **Implement user generation** in frontend (localStorage + Zustand)
-2. **Set up Yjs binding** with tldraw
+1. ~~Implement user generation in frontend~~ ✅
+2. ~~Set up Yjs binding with tldraw~~ ✅
 3. **Build backend** following BACKEND_ARCHITECTURE.md
-4. **Connect frontend to backend** WebSocket
+4. **Connect frontend to backend** WebSocket + y-websocket server
 5. **Add snapshot persistence** logic
 6. **Test multi-user collaboration**

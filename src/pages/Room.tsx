@@ -6,7 +6,9 @@ import { RoomHeader } from "@/components/RoomHeader";
 import { ParticipantsDrawer } from "@/components/ParticipantsDrawer";
 import { useRoomStore } from "@/store/useRoomStore";
 import { ScribbleWebSocket } from "@/lib/websocket";
-import { User } from "@/types/protocol";
+import { useUser } from "@/hooks/useUser";
+import { useYjsSync } from "@/hooks/useYjsSync";
+import { useCollaborativeCursors } from "@/hooks/useCollaborativeCursors";
 import { toast } from "sonner";
 
 // WebSocket server URL - configure this to point to your backend
@@ -16,6 +18,9 @@ const Room = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  
+  // Get persisted anonymous user
+  const { user, isLoading: isUserLoading } = useUser();
   
   const {
     setWebSocket,
@@ -32,6 +37,17 @@ const Room = () => {
   const [isInitializing, setIsInitializing] = useState(true);
   const wsRef = useRef<ScribbleWebSocket | null>(null);
 
+  // Yjs sync for collaboration
+  const { provider, isConnected: isYjsConnected, isSynced, bindEditor } = useYjsSync({
+    roomId: roomId || '',
+    userId: user?.id || '',
+    userName: user?.name || '',
+    userColor: user?.color || '#3b82f6',
+  });
+
+  // Collaborative cursors
+  const { cursors, updateCursor } = useCollaborativeCursors(provider);
+
   useEffect(() => {
     if (!roomId) {
       toast.error("Invalid room ID");
@@ -39,26 +55,16 @@ const Room = () => {
       return;
     }
 
-    // Get user info from URL params (in production, this would come from auth)
-    const userName = searchParams.get('user') || `User-${Math.random().toString(36).substring(7)}`;
-    const roomName = searchParams.get('name') || 'Untitled Room';
-    
-    // Generate random color for user
-    const colors = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#06b6d4'];
-    const userColor = colors[Math.floor(Math.random() * colors.length)];
+    if (isUserLoading || !user) return;
 
-    const user: User = {
-      id: Math.random().toString(36).substring(2),
-      name: userName,
-      color: userColor,
-    };
+    const roomName = searchParams.get('name') || 'Untitled Room';
 
     // Set room info
     setRoomId(roomId);
     setRoomName(roomName);
     setCurrentUser(user);
 
-    // Initialize WebSocket connection
+    // Initialize WebSocket connection for presence/signaling
     const initWebSocket = async () => {
       try {
         setConnectionState('connecting');
@@ -93,11 +99,6 @@ const Room = () => {
                 selection: message.selection,
                 viewport: message.viewport,
               });
-              break;
-
-            case 'update':
-              // Handle drawing updates (would integrate with tldraw + Yjs)
-              console.log('Drawing update received');
               break;
 
             case 'chat':
@@ -137,50 +138,102 @@ const Room = () => {
       }
       reset();
     };
-  }, [roomId]);
+  }, [roomId, user, isUserLoading]);
 
   // Custom UI overrides for tldraw
   const uiOverrides: TLUiOverrides = {
     tools(editor, tools) {
-      // You can customize tools here
       return tools;
     },
   };
 
-  if (isInitializing) {
+  if (isUserLoading || isInitializing) {
     return (
-      <div className="h-screen flex items-center justify-center">
+      <div className="h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
           <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-muted-foreground">Connecting to room...</p>
+          <p className="text-muted-foreground">
+            {isUserLoading ? 'Loading user...' : 'Connecting to room...'}
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="h-screen flex flex-col bg-background">
       <RoomHeader />
       
       <div className="flex-1 relative">
+        {/* Yjs connection status indicator */}
+        <div className="absolute top-2 right-2 z-10 flex items-center gap-2 bg-background/80 backdrop-blur-sm px-3 py-1.5 rounded-full border">
+          <div className={`w-2 h-2 rounded-full ${isYjsConnected ? 'bg-green-500' : 'bg-yellow-500'}`} />
+          <span className="text-xs text-muted-foreground">
+            {isYjsConnected ? (isSynced ? 'Synced' : 'Syncing...') : 'Connecting...'}
+          </span>
+          {cursors.length > 0 && (
+            <span className="text-xs text-muted-foreground">
+              • {cursors.length} online
+            </span>
+          )}
+        </div>
+
         <Tldraw
           overrides={uiOverrides}
           onMount={(editor) => {
-            console.log('🎨 Tldraw editor mounted', editor);
+            console.log('🎨 Tldraw editor mounted');
             
-            // Example: Listen to pointer events for presence
+            // Bind Yjs for collaboration
+            bindEditor(editor);
+            
+            // Track cursor for collaborative cursors
             editor.on('event', (event) => {
-              if (event.type === 'pointer' && 'point' in event && wsRef.current?.isConnected) {
+              if (event.type === 'pointer' && 'point' in event) {
                 const { x, y } = event.point;
-                wsRef.current.send({
-                  type: 'presence',
-                  clientId: useRoomStore.getState().currentUser?.id || '',
-                  cursor: { x, y },
-                });
+                updateCursor({ x, y });
+                
+                // Also send via WebSocket for presence
+                if (wsRef.current?.isConnected) {
+                  wsRef.current.send({
+                    type: 'presence',
+                    clientId: user?.id || '',
+                    cursor: { x, y },
+                  });
+                }
               }
             });
           }}
         />
+
+        {/* Render collaborative cursors */}
+        {cursors.map((cursor) => (
+          cursor.cursor && (
+            <div
+              key={cursor.id}
+              className="absolute pointer-events-none z-50 transition-all duration-75"
+              style={{
+                left: cursor.cursor.x,
+                top: cursor.cursor.y,
+                transform: 'translate(-2px, -2px)',
+              }}
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M5.5 3.21V20.8c0 .45.54.67.85.35l4.86-4.86a.5.5 0 0 1 .35-.15h6.87c.48 0 .72-.58.38-.92L5.85 2.85a.5.5 0 0 0-.35.36Z"
+                  fill={cursor.color}
+                  stroke="white"
+                  strokeWidth="1.5"
+                />
+              </svg>
+              <span
+                className="absolute left-4 top-4 px-1.5 py-0.5 rounded text-xs text-white whitespace-nowrap"
+                style={{ backgroundColor: cursor.color }}
+              >
+                {cursor.name}
+              </span>
+            </div>
+          )
+        ))}
       </div>
 
       <ParticipantsDrawer />
