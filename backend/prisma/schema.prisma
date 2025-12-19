@@ -1,0 +1,55 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Room {
+  id          String   @id @db.VarChar(20)
+  name        String   @db.VarChar(255)
+  creatorId   String?  @map("creator_id")
+  visibility  String   @default("public") @db.VarChar(10)
+  createdAt   DateTime @default(now()) @map("created_at")
+  lastActive  DateTime @default(now()) @map("last_active")
+  
+  snapshots    RoomSnapshot[]
+  participants RoomParticipant[]
+
+  @@index([lastActive])
+  @@map("rooms")
+}
+
+model RoomSnapshot {
+  id           String   @id @default(uuid())
+  roomId       String   @map("room_id") @db.VarChar(20)
+  snapshotData Bytes    @map("snapshot_data")
+  stateVector  Bytes    @map("state_vector")
+  version      Int
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@index([roomId, version(sort: Desc)])
+  @@map("room_snapshots")
+}
+
+model RoomParticipant {
+  id        String    @id @default(uuid())
+  roomId    String    @map("room_id") @db.VarChar(20)
+  userId    String    @map("user_id")
+  clientId  String    @map("client_id") @db.VarChar(50)
+  userName  String?   @map("user_name") @db.VarChar(50)
+  userColor String?   @map("user_color") @db.VarChar(7)
+  role      String    @default("editor") @db.VarChar(10)
+  joinedAt  DateTime  @default(now()) @map("joined_at")
+  leftAt    DateTime? @map("left_at")
+
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@index([roomId])
+  @@index([userId])
+  @@map("room_participants")
+}
