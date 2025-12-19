@@ -8,67 +8,69 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Scrible_it Design System - Clean, professional collaborative whiteboard */
-    --background: 220 20% 97%;
-    --foreground: 220 15% 20%;
+    /* Scrible_it Design System - Glassmorphism theme */
+    --background: 230 25% 95%;
+    --foreground: 230 20% 15%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 220 15% 20%;
+    --card: 0 0% 100% / 0.7;
+    --card-foreground: 230 20% 15%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 220 15% 20%;
+    --popover: 0 0% 100% / 0.9;
+    --popover-foreground: 230 20% 15%;
 
     /* Primary: vibrant blue for CTAs */
-    --primary: 217 91% 60%;
+    --primary: 220 90% 56%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 217 91% 52%;
+    --primary-hover: 220 90% 48%;
 
-    --secondary: 220 15% 95%;
-    --secondary-foreground: 220 15% 20%;
+    --secondary: 230 20% 98% / 0.6;
+    --secondary-foreground: 230 20% 20%;
 
-    --muted: 220 15% 96%;
-    --muted-foreground: 220 10% 50%;
+    --muted: 230 20% 96%;
+    --muted-foreground: 230 15% 45%;
 
-    --accent: 217 91% 95%;
-    --accent-foreground: 217 91% 35%;
+    --accent: 220 90% 96%;
+    --accent-foreground: 220 90% 35%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 15% 90%;
-    --input: 220 15% 90%;
-    --ring: 217 91% 60%;
+    --border: 230 20% 88% / 0.5;
+    --input: 230 20% 92%;
+    --ring: 220 90% 56%;
 
-    --radius: 0.75rem;
+    --radius: 1rem;
+    
+    /* Glassmorphism tokens */
+    --glass-bg: 0 0% 100% / 0.25;
+    --glass-border: 0 0% 100% / 0.3;
+    --glass-shadow: 0 8px 32px 0 hsl(230 25% 20% / 0.1);
+    --glass-blur: 16px;
     
     /* Custom tokens for Scrible_it */
-    --card-shadow: 0 2px 20px -4px hsl(220 15% 20% / 0.08);
-    --card-shadow-hover: 0 4px 30px -4px hsl(220 15% 20% / 0.12);
-    --page-background: 220 20% 97%;
+    --card-shadow: 0 8px 32px -8px hsl(230 25% 20% / 0.15);
+    --card-shadow-hover: 0 16px 48px -8px hsl(230 25% 20% / 0.2);
+    --page-background: 230 25% 95%;
     --canvas-background: 0 0% 100%;
     
+    /* Gradient backgrounds */
+    --gradient-bg: linear-gradient(135deg, hsl(220 60% 95%) 0%, hsl(270 40% 96%) 50%, hsl(200 50% 95%) 100%);
+    
     /* Presence colors for multiple users */
-    --presence-1: 217 91% 60%;
+    --presence-1: 220 90% 56%;
     --presence-2: 142 76% 45%;
     --presence-3: 280 80% 60%;
     --presence-4: 24 95% 55%;
     --presence-5: 200 98% 48%;
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-ring: 220 90% 56%;
   }
 
   .dark {
