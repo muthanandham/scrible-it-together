@@ -2,13 +2,12 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PenTool, ArrowRight } from "lucide-react";
+import { Sparkles, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 
 const Landing = () => {
   const navigate = useNavigate();
   const [joinRoomId, setJoinRoomId] = useState("");
-  const [newRoomName, setNewRoomName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [activeTab, setActiveTab] = useState<"create" | "join">("create");
 
@@ -25,11 +24,12 @@ const Landing = () => {
     setIsCreating(true);
     const roomId = Math.random().toString(36).substring(2, 10);
     const userName = `User-${Math.floor(Math.random() * 1000)}`;
-    toast.success(`Room created: ${roomId}`);
+    const roomName = `Canvas-${roomId.slice(0, 4)}`;
+    toast.success(`Room created!`);
     setTimeout(() => {
-      navigate(`/room/${roomId}?user=${userName}&name=${encodeURIComponent(newRoomName || 'Untitled Room')}`);
+      navigate(`/room/${roomId}?user=${userName}&name=${encodeURIComponent(roomName)}`);
       setIsCreating(false);
-    }, 500);
+    }, 400);
   };
 
   return (
@@ -49,8 +49,8 @@ const Landing = () => {
       <div className="w-full max-w-md space-y-6 animate-fade-in">
         {/* Logo & Title */}
         <div className="text-center space-y-3">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 backdrop-blur-sm border border-primary/20">
-            <PenTool className="w-8 h-8 text-primary" />
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-purple-500/20 backdrop-blur-sm border border-white/30">
+            <Sparkles className="w-8 h-8 text-primary" />
           </div>
           <h1 className="text-4xl font-bold tracking-tight text-foreground">
             Scrible It
@@ -89,13 +89,9 @@ const Landing = () => {
           {/* Create Tab */}
           {activeTab === "create" && (
             <div className="space-y-4 animate-fade-in">
-              <Input
-                placeholder="Room name (optional)"
-                value={newRoomName}
-                onChange={(e) => setNewRoomName(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleCreateRoom()}
-                className="bg-white/60 border-white/50 focus:bg-white/80 transition-colors h-12"
-              />
+              <p className="text-sm text-center text-muted-foreground">
+                Jump right in — no setup needed
+              </p>
               <Button 
                 onClick={handleCreateRoom}
                 disabled={isCreating}
