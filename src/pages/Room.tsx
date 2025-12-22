@@ -10,9 +10,6 @@ import { useUser } from "@/hooks/useUser";
 import { useYjsSync } from "@/hooks/useYjsSync";
 import { useCollaborativeCursors } from "@/hooks/useCollaborativeCursors";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Sparkles, ArrowRight } from "lucide-react";
 
 // WebSocket server URL - configure this to point to your backend
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:3001';
@@ -24,11 +21,6 @@ const Room = () => {
   
   // Get persisted anonymous user
   const { user, isLoading: isUserLoading } = useUser();
-  
-  // Room creation state
-  const [joinRoomId, setJoinRoomId] = useState("");
-  const [isCreating, setIsCreating] = useState(false);
-  const [activeTab, setActiveTab] = useState<"create" | "join">("create");
   
   const {
     setWebSocket,
@@ -56,30 +48,17 @@ const Room = () => {
   // Collaborative cursors
   const { cursors, updateCursor } = useCollaborativeCursors(provider);
 
-  // Room creation handlers
-  const handleJoinRoom = () => {
-    if (!joinRoomId.trim()) {
-      toast.error("Please enter a room ID");
-      return;
+  // Auto-create room if no roomId
+  useEffect(() => {
+    if (!roomId && !isUserLoading) {
+      const newRoomId = Math.random().toString(36).substring(2, 10);
+      const roomName = `Canvas-${newRoomId.slice(0, 4)}`;
+      navigate(`/room/${newRoomId}?name=${encodeURIComponent(roomName)}`, { replace: true });
     }
-    navigate(`/room/${joinRoomId}`);
-  };
-
-  const handleCreateRoom = async () => {
-    setIsCreating(true);
-    const newRoomId = Math.random().toString(36).substring(2, 10);
-    const roomName = `Canvas-${newRoomId.slice(0, 4)}`;
-    toast.success(`Room created!`);
-    setTimeout(() => {
-      navigate(`/room/${newRoomId}?name=${encodeURIComponent(roomName)}`);
-      setIsCreating(false);
-    }, 400);
-  };
+  }, [roomId, isUserLoading, navigate]);
 
   useEffect(() => {
-    // If no roomId, we're in the lobby - don't try to connect
     if (!roomId) {
-      setIsInitializing(false);
       return;
     }
 
@@ -176,133 +155,14 @@ const Room = () => {
   };
 
   // Loading state
-  if (isUserLoading || (roomId && isInitializing)) {
+  if (isUserLoading || !roomId || isInitializing) {
     return (
       <div className="h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
           <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-muted-foreground">
-            {isUserLoading ? 'Loading user...' : 'Connecting to room...'}
+            {isUserLoading ? 'Loading...' : !roomId ? 'Creating room...' : 'Connecting...'}
           </p>
-        </div>
-      </div>
-    );
-  }
-
-  // No roomId - show room creation/join UI
-  if (!roomId) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
-        {/* Gradient background */}
-        <div 
-          className="absolute inset-0 -z-10"
-          style={{
-            background: "linear-gradient(135deg, hsl(220 60% 95%) 0%, hsl(270 40% 96%) 50%, hsl(200 50% 95%) 100%)"
-          }}
-        />
-        
-        {/* Animated gradient orbs */}
-        <div className="absolute top-1/4 -left-32 w-96 h-96 rounded-full bg-primary/20 blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 -right-32 w-96 h-96 rounded-full bg-purple-400/20 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
-        
-        <div className="w-full max-w-md space-y-6 animate-fade-in">
-          {/* Logo & Title */}
-          <div className="text-center space-y-3">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-purple-500/20 backdrop-blur-sm border border-white/30">
-              <Sparkles className="w-8 h-8 text-primary" />
-            </div>
-            <h1 className="text-4xl font-bold tracking-tight text-foreground">
-              Scrible It
-            </h1>
-            <p className="text-muted-foreground">
-              Collaborative whiteboard for teams
-            </p>
-          </div>
-
-          {/* Glass Card */}
-          <div className="backdrop-blur-xl bg-white/40 border border-white/50 rounded-2xl p-6 shadow-[0_8px_32px_-8px_hsl(230_25%_20%_/_0.15)]">
-            {/* Tab Switcher */}
-            <div className="flex gap-1 p-1 bg-white/30 rounded-xl mb-6">
-              <button
-                onClick={() => setActiveTab("create")}
-                className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all ${
-                  activeTab === "create"
-                    ? "bg-white shadow-sm text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Create Room
-              </button>
-              <button
-                onClick={() => setActiveTab("join")}
-                className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all ${
-                  activeTab === "join"
-                    ? "bg-white shadow-sm text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Join Room
-              </button>
-            </div>
-
-            {/* Create Tab */}
-            {activeTab === "create" && (
-              <div className="space-y-4 animate-fade-in">
-                <p className="text-sm text-center text-muted-foreground">
-                  Jump right in — no setup needed
-                </p>
-                <Button 
-                  onClick={handleCreateRoom}
-                  disabled={isCreating}
-                  className="w-full h-12 text-base font-medium bg-primary hover:bg-primary/90 shadow-lg shadow-primary/25"
-                  size="lg"
-                >
-                  {isCreating ? "Creating..." : "Start Scribbling"}
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </div>
-            )}
-
-            {/* Join Tab */}
-            {activeTab === "join" && (
-              <div className="space-y-4 animate-fade-in">
-                <Input
-                  placeholder="Enter Room ID"
-                  value={joinRoomId}
-                  onChange={(e) => setJoinRoomId(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleJoinRoom()}
-                  className="bg-white/60 border-white/50 focus:bg-white/80 transition-colors h-12"
-                />
-                <Button 
-                  onClick={handleJoinRoom}
-                  className="w-full h-12 text-base font-medium bg-primary hover:bg-primary/90 shadow-lg shadow-primary/25"
-                  size="lg"
-                >
-                  Join Room
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-                <p className="text-xs text-center text-muted-foreground">
-                  Ask someone to share their room link with you
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Features */}
-          <div className="flex justify-center gap-6 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-              Real-time sync
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-              Live cursors
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
-              Export ready
-            </span>
-          </div>
         </div>
       </div>
     );
