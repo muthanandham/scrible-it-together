@@ -7,8 +7,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
 import { Editor, TLRecord, StoreSnapshot, TLStoreSnapshot, createTLStore, defaultShapeUtils } from 'tldraw';
-
-const YJS_WS_URL = import.meta.env.VITE_YJS_WS_URL || 'ws://localhost:1234';
+import { config } from '@/lib/config';
 
 interface UseYjsSyncOptions {
   roomId: string;
@@ -40,7 +39,7 @@ export function useYjsSync({ roomId, userId, userName, userColor }: UseYjsSyncOp
     const ydoc = new Y.Doc();
     ydocRef.current = ydoc;
 
-    const provider = new WebsocketProvider(YJS_WS_URL, `room:${roomId}`, ydoc);
+    const provider = new WebsocketProvider(config.yjsWsUrl, `room:${roomId}`, ydoc);
     providerRef.current = provider;
 
     // Set user awareness
