@@ -4,6 +4,7 @@
  */
 
 import { WSMessage, User } from '@/types/protocol';
+import { config } from '@/lib/config';
 
 type MessageHandler = (message: WSMessage) => void;
 
